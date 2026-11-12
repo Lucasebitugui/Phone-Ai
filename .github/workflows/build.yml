@@ -1,0 +1,30 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: unzip -q PhoneeAI.zip
+      - run: sed -i 's/>PhoneAI</>Phonee AI</; s/Lets PhoneAI/Lets Phonee AI/' PhoneAI/app/src/main/res/values/strings.xml
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+      - run: gradle assembleDebug --no-daemon
+        working-directory: PhoneAI
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhoneAI-apk
+          path: PhoneAI/app/build/outputs/apk/debug/app-debug.apk
+      - run: gh release create build-${{ github.run_number }} PhoneAI/app/build/outputs/apk/debug/app-debug.apk --title "build-${{ github.run_number }}" --notes "Phonee AI"
+        env:
+          GH_TOKEN: ${{ github.token }}
